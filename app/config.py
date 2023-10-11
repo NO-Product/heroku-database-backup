@@ -2,6 +2,7 @@ import os
 import logging
 
 
+
 def get_config_vars():
     """
     This function fetches all the configuration variables from the Heroku app.
