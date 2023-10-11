@@ -2,13 +2,12 @@ import logging
 from ftplib import FTP
 from flask import current_app
 
+
 def download_from_destination(file_name):
     """
     This function downloads a file from an FTP server.
-    
     Parameters:
     file_name (str): The name of the file to be downloaded.
-    
     Returns:
     bool: True if file download is successful, False otherwise.
     """
