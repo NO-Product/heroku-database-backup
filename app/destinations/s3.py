@@ -49,32 +49,43 @@ def upload_to_destination(file_name, file_content):
         )
         return False
     except Exception as e:
-        logging.error(f"[upload_to_destination] An error occurred while uploading the file: {str(e)}")
+        logging.error(
+            f"[upload_to_destination] An error occurred while uploading the file: {str(e)}"
+        )
         return False
-    
+
+
 def fetch_destination_filelist():
     """
     This function fetches a list of all files from S3.
-    
     Returns:
     list: A list of all file names.
     """
-    s3 = boto3.client('s3', region_name=current_app.config['AWS_S3_REGION'])
+    s3 = boto3.client("s3", region_name=current_app.config["AWS_S3_REGION"])
     try:
-        return [obj['Key'] for obj in s3.list_objects(Bucket=current_app.config['AWS_S3_BUCKET'])['Contents']]
+        return [
+            obj["Key"]
+            for obj in s3.list_objects(Bucket=current_app.config["AWS_S3_BUCKET"])[
+                "Contents"
+            ]
+        ]
     except Exception as e:
-        logging.error(f"[fetch_destination_filelist] An error occurred while fetching the file list: {str(e)}")
+        logging.error(
+            f"[fetch_destination_filelist] An error occurred while fetching the file list: {str(e)}"
+        )
         return []
+
 
 def delete_file_from_destination(file_name):
     """
     This function deletes a file from S3.
-    
     Parameters:
     file_name (str): The name of the file to be deleted.
     """
-    s3 = boto3.client('s3', region_name=current_app.config['AWS_S3_REGION'])
+    s3 = boto3.client("s3", region_name=current_app.config["AWS_S3_REGION"])
     try:
-        s3.delete_object(Bucket=current_app.config['AWS_S3_BUCKET'], Key=file_name)
+        s3.delete_object(Bucket=current_app.config["AWS_S3_BUCKET"], Key=file_name)
     except Exception as e:
-        logging.error(f"[delete_file_from_destination] An error occurred while deleting the file: {str(e)}")
+        logging.error(
+            f"[delete_file_from_destination] An error occurred while deleting the file: {str(e)}"
+        )

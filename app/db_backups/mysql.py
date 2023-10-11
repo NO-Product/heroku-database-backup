@@ -5,7 +5,6 @@ from ..util import parse_connection_url
 import logging
 
 
-
 def create_backup_mysql(ConnectionUrl, backup_filename):
     """
     This function creates a backup of a MySQL database.

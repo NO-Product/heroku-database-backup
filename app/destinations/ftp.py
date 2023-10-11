@@ -3,7 +3,6 @@ from ftplib import FTP
 from flask import current_app
 
 
-
 def download_from_destination(file_name):
     """
     This function downloads a file from an FTP server.
