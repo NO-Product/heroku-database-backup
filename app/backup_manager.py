@@ -98,6 +98,7 @@ def manual_backup(db_var, label=None):
             logging.info(f"[manual_backup] Backup upload successful: {compressed_backup_file}")
             # Send email notification
             send_email_notification(app.config, "Backup Successful", f"Backup upload successful: {compressed_backup_file}")
+            return compressed_backup_file  # return the backup file name
         else:
             logging.error("[manual_backup] Backup upload failed")
             # Send email notification
