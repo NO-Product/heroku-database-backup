@@ -1,0 +1,76 @@
+{
+    "name": "Heroku Database Backup Manager",
+    "description": "Automate and schedule database backups for your Heroku apps. Supports PostgreSQL and MySQL databases and can upload backups to S3 or FTP. Ideal for free and basic tier databases that lack automated backup scheduling.",
+    "repository": "https://github.com/NO-Product/heroku-database-backup",
+    "website": "https://github.com/NO-Product/heroku-database-backup",
+    "keywords": ["heroku", "database", "backup", "automation", "scheduler", "postgres", "mysql", "aws s3", "ftp"],
+    "env": {
+      "LOG_LEVEL": {
+        "description": "Sets the log level for the application. Possible values are 'DEBUG', 'INFO', 'WARNING', 'ERROR', and 'CRITICAL'. Default is 'INFO'.",
+        "value": "INFO"
+      },
+      "UPLOAD_DESTINATION": {
+        "description": "Specifies the destination for the backup files. Possible values are 'S3' and 'FTP'.",
+        "required": true
+      },
+      "SECRET_KEY": {
+        "description": "A secret key used to validate tasks run via GET requests. The 'secretKey' URL parameter must be set and match this value.",
+        "required": true
+      },
+      "SMTP_CREDENTIALS": {
+        "description": "A JSON object containing the SMTP server details for sending email notifications. The object should include 'smtp_server', 'smtp_port', 'smtp_username', and 'smtp_password'.",
+        "required": false
+      },
+      "NOTIFY_RECIPIENTS": {
+        "description": "A comma-separated list of email addresses to receive backup notifications.",
+        "required": false
+      },
+      "FTP_USER": {
+        "description": "FTP username, required if 'FTP' is chosen as the UPLOAD_DESTINATION.",
+        "required": false
+      },
+      "FTP_PASS": {
+        "description": "FTP password, required if 'FTP' is chosen as the UPLOAD_DESTINATION.",
+        "required": false
+      },
+      "FTP_HOSTNAME": {
+        "description": "FTP hostname, required if 'FTP' is chosen as the UPLOAD_DESTINATION.",
+        "required": false
+      },
+      "FTP_PORT": {
+        "description": "FTP port, required if 'FTP' is chosen as the UPLOAD_DESTINATION.",
+        "required": false
+      },
+      "FTP_PATH": {
+        "description": "FTP path, required if 'FTP' is chosen as the UPLOAD_DESTINATION.",
+        "required": false
+      },
+      "AWS_ACCESS_KEY_ID": {
+        "description": "AWS Access Key ID, required if 'S3' is chosen as the UPLOAD_DESTINATION.",
+        "required": false
+      },
+      "AWS_SECRET_ACCESS_KEY": {
+        "description": "AWS Secret Access Key, required if 'S3' is chosen as the UPLOAD_DESTINATION.",
+        "required": false
+      },
+      "AWS_S3_BUCKET": {
+        "description": "AWS S3 Bucket name, required if 'S3' is chosen as the UPLOAD_DESTINATION.",
+        "required": false
+      },
+      "AWS_S3_REGION": {
+        "description": "AWS S3 Region, required if 'S3' is chosen as the UPLOAD_DESTINATION.",
+        "required": false
+      }
+    },
+    "formation": {
+      "web": {
+        "quantity": 1,
+        "size": "free"
+      }
+    },
+    "buildpacks": [
+      {
+        "url": "heroku/python"
+      }
+    ]
+  }
