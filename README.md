@@ -10,7 +10,7 @@ The primary benefit of using this app is to overcome the limitations of the free
 2. Fill in the required configuration variables (explained below).
 3. Click on `Deploy App`.
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/NO-Product/heroku-database-backup/tarball/v0.1.0)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/NO-Product/heroku-database-backup/tarball/v0.1.1)
 
 ## Configuration Variables
 
