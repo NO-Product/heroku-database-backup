@@ -39,176 +39,177 @@ logging.basicConfig(level=log_level)
 
 
 def manual_backup(db_var, label=None):
-    db_url = os.getenv(db_var)
+    with app.app_context():
+        db_url = os.getenv(db_var)
 
-    if db_url is None:
-        logging.error(f"[manual_backup] Invalid environment variable: {db_var}")
-        sys.exit(1)
-    elif isinstance(db_url, str) and db_url.startswith(
-        ("postgres://", "mysql://", "mssql://", "oracle://")
-    ):
-        logging.debug(f"[manual_backup] Parsing connection URL: {db_url}")
-        details = parse_connection_url(db_url)
-
-        if label and not re.match("^[a-zA-Z0-9_-]*$", label):
-            logging.error(f"[manual_backup] Invalid label: {label}")
+        if db_url is None:
+            logging.error(f"[manual_backup] Invalid environment variable: {db_var}")
             sys.exit(1)
-        label = label.replace(" ", "-").lower() if label else None
+        elif isinstance(db_url, str) and db_url.startswith(
+            ("postgres://", "mysql://", "mssql://", "oracle://")
+        ):
+            logging.debug(f"[manual_backup] Parsing connection URL: {db_url}")
+            details = parse_connection_url(db_url)
 
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        backup_filename = (
-            f"{label}_{details['database_name']}_{timestamp}"
-            if label
-            else f"{details['database_name']}_{timestamp}"
-        )
+            if label and not re.match("^[a-zA-Z0-9_-]*$", label):
+                logging.error(f"[manual_backup] Invalid label: {label}")
+                sys.exit(1)
+            label = label.replace(" ", "-").lower() if label else None
 
-        backup_file = None
-        for attempt in range(3):
-            try:
-                backup_file = DB_BACKUP_FUNCTIONS[details["database_type"]](
-                    db_url, backup_filename
-                )
-                logging.debug(
-                    f"[manual_backup] Backup file created on attempt {attempt+1}: {backup_file}"
-                )
-                break
-            except Exception as e:
-                logging.error(
-                    f"[manual_backup] Error creating backup on attempt {attempt+1}: {str(e)}"
-                )
-                if attempt < 2:  # Don't sleep on the last attempt
-                    time.sleep(5)
-                else:
-                    backup_file = None
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            backup_filename = (
+                f"{label}_{details['database_name']}_{timestamp}"
+                if label
+                else f"{details['database_name']}_{timestamp}"
+            )
+
+            backup_file = None
+            for attempt in range(3):
+                try:
+                    backup_file = DB_BACKUP_FUNCTIONS[details["database_type"]](
+                        db_url, backup_filename
+                    )
+                    logging.debug(
+                        f"[manual_backup] Backup file created on attempt {attempt+1}: {backup_file}"
+                    )
                     break
+                except Exception as e:
+                    logging.error(
+                        f"[manual_backup] Error creating backup on attempt {attempt+1}: {str(e)}"
+                    )
+                    if attempt < 2:  # Don't sleep on the last attempt
+                        time.sleep(5)
+                    else:
+                        backup_file = None
+                        break
 
-        if backup_file is None:
-            logging.error("[manual_backup] Backup creation failed")
-            sys.exit(1)
+            if backup_file is None:
+                logging.error("[manual_backup] Backup creation failed")
+                sys.exit(1)
 
-        try:
-            logging.debug(f"[manual_backup] Compressing backup file: {backup_file}")
-            compression_success = compress_backup(backup_file)
-            if not compression_success:
-                raise Exception("[manual_backup] Compression failed")
-        except Exception as e:
-            logging.error(f"[manual_backup] Error compressing backup: {str(e)}")
-            sys.exit(1)
+            try:
+                logging.debug(f"[manual_backup] Compressing backup file: {backup_file}")
+                compression_success = compress_backup(backup_file)
+                if not compression_success:
+                    raise Exception("[manual_backup] Compression failed")
+            except Exception as e:
+                logging.error(f"[manual_backup] Error compressing backup: {str(e)}")
+                sys.exit(1)
 
-        compressed_backup_file = backup_file + ".gz"
-        logging.debug(
-            f"[manual_backup] Backup file compressed successfully: {compressed_backup_file}"
-        )
-
-        upload_success = False
-        try:
+            compressed_backup_file = backup_file + ".gz"
             logging.debug(
-                f"[manual_backup] Uploading compressed backup file: {compressed_backup_file}"
+                f"[manual_backup] Backup file compressed successfully: {compressed_backup_file}"
             )
-            with open(compressed_backup_file, "rb") as file:
-                file_content = file.read()
-            if current_app.config["UPLOAD_DESTINATION"] == "S3":
-                upload_success = s3.upload_to_destination(
-                    compressed_backup_file, file_content
-                )
-            elif current_app.config["UPLOAD_DESTINATION"] == "FTP":
-                upload_success = ftp.upload_to_destination(
-                    compressed_backup_file, file_content
-                )
-        except Exception as e:
-            logging.error(f"[manual_backup] Error uploading backup: {str(e)}")
-            sys.exit(1)
 
-        if upload_success:
-            logging.info(
-                f"[manual_backup] Backup upload successful: {compressed_backup_file}"
-            )
+            upload_success = False
+            try:
+                logging.debug(
+                    f"[manual_backup] Uploading compressed backup file: {compressed_backup_file}"
+                )
+                with open(compressed_backup_file, "rb") as file:
+                    file_content = file.read()
+                if current_app.config["UPLOAD_DESTINATION"] == "S3":
+                    upload_success = s3.upload_to_destination(
+                        compressed_backup_file, file_content
+                    )
+                elif current_app.config["UPLOAD_DESTINATION"] == "FTP":
+                    upload_success = ftp.upload_to_destination(
+                        compressed_backup_file, file_content
+                    )
+            except Exception as e:
+                logging.error(f"[manual_backup] Error uploading backup: {str(e)}")
+                sys.exit(1)
+
+            if upload_success:
+                logging.info(
+                    f"[manual_backup] Backup upload successful: {compressed_backup_file}"
+                )
+                # Send email notification
+                send_email_notification(
+                    app.config,
+                    "Backup Successful",
+                    f"Backup upload successful: {compressed_backup_file}",
+                )
+                return compressed_backup_file  # return the backup file name
+            else:
+                logging.error("[manual_backup] Backup upload failed")
+                # Send email notification
+                send_email_notification(app.config, "Backup Failed", "Backup upload failed")
+                sys.exit(1)
+        else:
+            logging.error("[manual_backup] Invalid database connection URL")
             # Send email notification
             send_email_notification(
-                app.config,
-                "Backup Successful",
-                f"Backup upload successful: {compressed_backup_file}",
+                app.config, "Backup Failed", "Invalid database connection URL"
             )
-            return compressed_backup_file  # return the backup file name
-        else:
-            logging.error("[manual_backup] Backup upload failed")
-            # Send email notification
-            send_email_notification(app.config, "Backup Failed", "Backup upload failed")
             sys.exit(1)
-    else:
-        logging.error("[manual_backup] Invalid database connection URL")
-        # Send email notification
-        send_email_notification(
-            app.config, "Backup Failed", "Invalid database connection URL"
-        )
-        sys.exit(1)
 
 
 def trim_backup_history(db_var, days):
-    db_url = os.getenv(db_var)
+    with app.app_context():
+        db_url = os.getenv(db_var)
 
-    if db_url is None:
-        logging.error(f"[trim_history] Invalid environment variable: {db_var}")
-        sys.exit(1)
-    elif isinstance(db_url, str) and db_url.startswith(
-        ("postgres://", "mysql://", "mssql://", "oracle://")
-    ):
-        logging.debug(f"[trim_history] Parsing connection URL: {db_url}")
-        details = parse_connection_url(db_url)
+        if db_url is None:
+            logging.error(f"[trim_history] Invalid environment variable: {db_var}")
+            sys.exit(1)
+        elif isinstance(db_url, str) and db_url.startswith(
+            ("postgres://", "mysql://", "mssql://", "oracle://")
+        ):
+            logging.debug(f"[trim_history] Parsing connection URL: {db_url}")
+            details = parse_connection_url(db_url)
 
-        days = int(days)
-        cutoff_date = datetime.now() - timedelta(days=days)
+            days = int(days)
+            cutoff_date = datetime.now() - timedelta(days=days)
 
-        file_list = []
-        if current_app.config["UPLOAD_DESTINATION"] == "S3":
-            file_list = s3.fetch_destination_filelist()
-        elif current_app.config["UPLOAD_DESTINATION"] == "FTP":
-            file_list = ftp.fetch_destination_filelist()
+            file_list = []
+            if current_app.config["UPLOAD_DESTINATION"] == "S3":
+                file_list = s3.fetch_destination_filelist()
+            elif current_app.config["UPLOAD_DESTINATION"] == "FTP":
+                file_list = ftp.fetch_destination_filelist()
 
-        files_to_delete = [
-            file
-            for file in file_list
-            if file.startswith(details["database_name"])
-            and datetime.strptime(file.split("_")[-1], "%Y%m%d%H%M%S") < cutoff_date
-        ]
+            files_to_delete = [
+                file
+                for file in file_list
+                if file.startswith(details["database_name"])
+                and datetime.strptime(file.split("_")[-1], "%Y%m%d%H%M%S") < cutoff_date
+            ]
 
-        deleted_files = []
-        failed_deletes = []
-        for file in files_to_delete:
-            creation_date = datetime.strptime(file.split("_")[-1], "%Y%m%d%H%M%S")
-            days_old = (datetime.now() - creation_date).days
-            logging.debug(
-                f"# Filename: {file}\nCreated at: {creation_date}\nDays old: {days_old}\n=="
-            )
-            try:
-                if current_app.config["UPLOAD_DESTINATION"] == "S3":
-                    s3.delete_file_from_destination(file)
-                elif current_app.config["UPLOAD_DESTINATION"] == "FTP":
-                    ftp.delete_file_from_destination(file)
-                logging.info(f"[trim_history] File deleted successfully: {file}")
-                deleted_files.append(file)
-            except Exception as e:
-                logging.error(
-                    f"[trim_history] Error deleting file: {file}, Error: {str(e)}"
+            deleted_files = []
+            failed_deletes = []
+            for file in files_to_delete:
+                creation_date = datetime.strptime(file.split("_")[-1], "%Y%m%d%H%M%S")
+                days_old = (datetime.now() - creation_date).days
+                logging.debug(
+                    f"# Filename: {file}\nCreated at: {creation_date}\nDays old: {days_old}\n=="
                 )
-                failed_deletes.append(file)
+                try:
+                    if current_app.config["UPLOAD_DESTINATION"] == "S3":
+                        s3.delete_file_from_destination(file)
+                    elif current_app.config["UPLOAD_DESTINATION"] == "FTP":
+                        ftp.delete_file_from_destination(file)
+                    logging.info(f"[trim_history] File deleted successfully: {file}")
+                    deleted_files.append(file)
+                except Exception as e:
+                    logging.error(
+                        f"[trim_history] Error deleting file: {file}, Error: {str(e)}"
+                    )
+                    failed_deletes.append(file)
 
-        # Send email notification
-        if failed_deletes:
-            send_email_notification(
-                app.config,
-                "Trim History Completed with Errors",
-                f"Trim history completed. Deleted files: {deleted_files}, Failed deletes: {failed_deletes}",
-            )
-        else:
-            send_email_notification(
-                app.config,
-                "Trim History Completed Successfully",
-                f"Trim history completed. Deleted files: {deleted_files}",
-            )
+            # Send email notification
+            if failed_deletes:
+                send_email_notification(
+                    app.config,
+                    "Trim History Completed with Errors",
+                    f"Trim history completed. Deleted files: {deleted_files}, Failed deletes: {failed_deletes}",
+                )
+            else:
+                send_email_notification(
+                    app.config,
+                    "Trim History Completed Successfully",
+                    f"Trim history completed. Deleted files: {deleted_files}",
+                )
 
-        return deleted_files, failed_deletes
-
+            return deleted_files, failed_deletes
 
 @app.route("/tasks/manual_backup", methods=["GET"])
 def manual_backup_route():
