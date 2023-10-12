@@ -235,18 +235,3 @@ def trim_history_route():
     days = request.args.get("days")
     deleted_files, failed_deletes = trim_backup_history(config_var, days)
     return f"Trim history completed. Deleted files: {deleted_files}, Failed deletes: {failed_deletes}"
-
-
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "manual_backup":
-            manual_backup(sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None)
-        elif sys.argv[1] == "trim_history":
-            trim_backup_history(sys.argv[2], sys.argv[3])
-        else:
-            print(
-                "Usage: python app/backup_manager.py [manual_backup|trim_history] [CONFIG_VAR] [LABEL|DAYS]"
-            )
-            sys.exit(1)
-    else:
-        app.run(host="0.0.0.0", port=5000)
