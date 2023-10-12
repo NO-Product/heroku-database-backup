@@ -10,7 +10,7 @@ The primary benefit of using this app is to overcome the limitations of the free
 2. Fill in the required configuration variables (explained below).
 3. Click on `Deploy App`.
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/NO-Product/heroku-database-backup/tarball/v0.1.1)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/NO-Product/heroku-database-backup/tarball/v0.1.2)
 
 ## Configuration Variables
 
@@ -36,24 +36,22 @@ The primary benefit of using this app is to overcome the limitations of the free
 
 The Heroku Database Backup Manager can be used in three different scenarios:
 
-1. **Running from the CLI**: This is useful for ad-hoc backups or when you want to run the tasks manually. You can run the `manual_backup` or `trim_history` commands directly from the command line. The `manual_backup` command requires the `configVar` and an optional `label`. The `trim_history` command requires the `configVar` and the number of `days` to keep backups for.
+1. **Running from the CLI:** This is useful for ad-hoc backups or when you want to run the tasks manually. You can run the `manual_backup` or `trim_history` commands directly from the command line. The `manual_backup` command requires the `configVar` and an optional `label`. The `trim_history` command requires the `configVar` and the number of days to keep backups for.
 
-2. **Running from an external cron-manager**: If you have an external cron manager, you can schedule the tasks to run at specific intervals. The cron manager would make a GET request to the `/tasks/manual_backup` or `/tasks/trim_history` endpoints with the necessary parameters.
+2. **Running from an external cron-manager:** If you have an external cron manager, you can schedule the tasks to run at specific intervals. The cron manager would make a GET request to the `/tasks/manual_backup` or `/tasks/trim_history` endpoints with the necessary parameters.
 
-3. **Running from Heroku Scheduler**: Heroku Scheduler is a Heroku add-on that allows you to schedule tasks to run at specified intervals. You can set it up to run the `manual_backup` or `trim_history` tasks at your preferred frequency.
+3. **Running from Heroku Scheduler:** Heroku Scheduler is a Heroku add-on that allows you to schedule tasks to run at specified intervals. You can set it up to run the `manual_backup` or `trim_history` tasks at your preferred frequency.
 
 ### Running from the CLI
 
 For `manual_backup`, use the following command:
-
-```
-python app/backup_manager.py manual_backup <configVar> <label>
+```bash
+python app/run.py manual_backup <configVar> <label>
 ```
 
 For `trim_history`, use the following command:
-
-```
-python app/backup_manager.py trim_history <configVar> <days>
+```bash
+python app/run.py trim_history <configVar> <days>
 ```
 
 Replace `<configVar>` with the environment variable that holds the connection URL for your database. Replace `<label>` with a label of your choice (only for `manual_backup`). Replace `<days>` with the number of days to keep backups for (only for `trim_history`).
@@ -67,7 +65,6 @@ To trigger a `manual_backup`, make a GET request to the `/tasks/manual_backup` e
 - `label`: A label that will be prepended to the backup file name (optional).
 
 Example request:
-
 ```
 https://your-app-name.herokuapp.com/tasks/manual_backup?secretKey=your-secret-key&configVar=DATABASE_URL&label=your-label
 ```
@@ -79,7 +76,6 @@ To trigger a `trim_history`, make a GET request to the `/tasks/trim_history` end
 - `days`: The number of days to keep backups for.
 
 Example request:
-
 ```
 https://your-app-name.herokuapp.com/tasks/trim_history?secretKey=your-secret-key&configVar=DATABASE_URL&days=30
 ```
@@ -87,16 +83,20 @@ https://your-app-name.herokuapp.com/tasks/trim_history?secretKey=your-secret-key
 ### Running from Heroku Scheduler
 
 1. Navigate to your Heroku Dashboard and select the app you've deployed for the Database Backup Manager.
-2. In the `Overview` tab, click on `Configure Add-ons`.
-3. In the `Add-ons` search box, type `Scheduler` and select `Heroku Scheduler`.
-4. Once the Scheduler has been added, click on it to open the dashboard.
-5. Click on `Create Job`.
-6. In the `Run Command` field, enter the command for the task you want to run. For example, to run a manual backup, you would enter `/app/tasks/manual_backup?configVar=DATABASE_URL&label=your-label`. Replace `DATABASE_URL` with the config var for your database and `your-label` with a label of your choice.
-7. Select the frequency (`Every 10 minutes`, `Hourly`, or `Daily`) and the next run time.
-8. Click on `Save Job`.
+2. In the **Overview** tab, click on **Configure Add-ons**.
+3. In the **Add-ons** search box, type Scheduler and select **Heroku Scheduler**.
+4. Once the **Scheduler** has been added, click on it to open the dashboard.
+5. Click on **Create Job**.
+6. In the **Run Command** field, enter the command for the task you want to run. For example, to run a manual backup, you would enter `python -m app.run manual_backup DATABASE_URL your-label`. Replace `DATABASE_URL` with the config var for your database and `your-label` with a label of your choice.
+7. Select the frequency (Every 10 minutes, Hourly, or Daily) and the next run time.
+8. Click on **Save Job**.
 
 The job will now run at the specified frequency. You can create multiple jobs to backup different databases or to run backups at different times.
 
+Please note that the command to run the tasks has been updated to use the `-m` flag, which allows Python to run the script as a module within the package. This is necessary for the relative imports in the script to work correctly.
+
+
+<hr> 
 
 ## Frequently Asked Questions
 
