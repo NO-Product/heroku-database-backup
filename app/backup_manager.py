@@ -134,7 +134,9 @@ def manual_backup(db_var, label=None):
             else:
                 logging.error("[manual_backup] Backup upload failed")
                 # Send email notification
-                send_email_notification(app.config, "Backup Failed", "Backup upload failed")
+                send_email_notification(
+                    app.config, "Backup Failed", "Backup upload failed"
+                )
                 sys.exit(1)
         else:
             logging.error("[manual_backup] Invalid database connection URL")
@@ -210,6 +212,7 @@ def trim_backup_history(db_var, days):
                 )
 
             return deleted_files, failed_deletes
+
 
 @app.route("/tasks/manual_backup", methods=["GET"])
 def manual_backup_route():
